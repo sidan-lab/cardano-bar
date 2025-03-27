@@ -1,0 +1,26 @@
+{
+	"sendLovelace": {
+		"prefix": "sendLovelace",
+		"body": [
+            "const tx = new Transaction({ initiator: wallet }).sendLovelace('address','1000000');",
+            "const unsignedTx = await tx.build();",
+            "const signedTx = await wallet.signTx(unsignedTx);",
+            "const txHash = await wallet.submitTx(signedTx);"
+		],
+		"description": "Using Mesh Tx Builder to build a transaction to send lovelace to the recipient's address"
+	},
+	"imports_sendLovelace": {
+		"prefix": "imports_sendLovelace",
+		"body": [
+			"import { Transaction } from '@meshsdk/core';"
+		],
+		"description": "Imports for sendLovelace snippet"
+	},
+	"useWalletList": {
+		"prefix": "walletList",
+		"body": [
+			"const wallets = useWalletList();"
+		],
+		"description": "useWalletList hook"
+	}
+}

@@ -1,0 +1,16 @@
+{
+	"useWallet": {
+		"prefix": "useWallet",
+		"body": [
+			"const { wallet, connected, name, connecting, connect, disconnect, error } = useWallet();"
+		],
+		"description": "useWallet hook"
+	},
+	"useWalletList": {
+		"prefix": "useWalletList",
+		"body": [
+			"const wallets = useWalletList();"
+		],
+		"description": "useWalletList hook"
+	}
+}

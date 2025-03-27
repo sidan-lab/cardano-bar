@@ -1,0 +1,32 @@
+{
+    "MintingBlueprint": {
+        "prefix": [
+            "MintingBlueprint"
+        ],
+        "body": [
+            "const blueprint = new MintingBlueprint(\"V3\");",
+            "blueprint.paramScript(\"${compiledCode:CborHex}\", [\"${params:params}\"], \"${paramsType:Mesh}\");"
+        ],
+        "description": "Initialize a Minting Blueprint"
+    },
+    "SpendingBlueprint": {
+        "prefix": [
+            "SpendingBlueprint"
+        ],
+        "body": [
+            "const blueprint = new SpendingBlueprint(\"V3\",  ${networkId:0},  \"${stakeHash:\"stakeHash\"}\");",
+            "blueprint.paramScript(\"${compiledCode:CborHex}\", [\"${params:params}\"], \"${paramsType:Mesh}\");"
+        ],
+        "description": "Initialize a Spending Blueprint"
+    },
+    "WithdrawalBlueprint": {
+        "prefix": [
+            "WithdrawalBlueprint"
+        ],
+        "body": [
+            "const blueprint = new WithdrawalBlueprint(\"V3\", \"${networkId:0}\");",
+            "blueprint.paramScript(\"${compiledCode:CborHex}\", [\"${params:params}\"], \"${paramsType:Mesh}\");"
+        ],
+        "description": "Initialize a Withdrawal Blueprint"
+    }
+}

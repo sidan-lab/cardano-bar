@@ -1,0 +1,7 @@
+{
+    "hello": {
+        "prefix": "hello",
+        "body": "$BLOCK_COMMENT_START Hello Whiskey $BLOCK_COMMENT_END",
+        "description": "Hello Whisky"
+    }
+}

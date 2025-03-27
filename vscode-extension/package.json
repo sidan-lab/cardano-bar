@@ -1,0 +1,82 @@
+{
+  "name": "cardano-bar-vscode",
+  "icon": "icon.png",
+  "displayName": "Cardano Devkit (Alpha)",
+  "description": "A VSCode extension for Cardano development",
+  "publisher": "sidan-lab",
+  "version": "0.0.6",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sidan-lab/cardano-bar"
+  },
+  "engines": {
+    "vscode": "^1.65.0"
+  },
+  "categories": [
+    "Other",
+    "Snippets"
+  ],
+  "license": "SEE LICENSE IN LICENSE",
+  "rootDir": "./",
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cardano-extension.analyzeScriptJSON",
+        "title": "Analyze Script (JSON data type)"
+      },
+      {
+        "command": "cardano-extension.analyzeScriptMesh",
+        "title": "Analyze Script (Mesh data type)"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "typescript",
+        "path": "../snippets/mesh/mesh-txbuilder.json"
+      },
+      {
+        "language": "typescript",
+        "path": "../snippets/mesh/mesh-wallet-hooks.json"
+      },
+      {
+        "language": "typescript",
+        "path": "../snippets/mesh/mesh-blueprint-utils.json"
+      },
+      {
+        "language": "aiken",
+        "path": "../snippets/aiken/aiken-helloworld.json"
+      },
+      {
+        "language": "aiken",
+        "path": "../snippets/vodka/vodka-helloworld.json"
+      },
+      {
+        "language": "rust",
+        "path": "../snippets/whisky/whisky-helloworld.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "deploy": "vsce publish --npm"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^22.9.0",
+    "@types/vscode": "^1.65.0",
+    "@typescript-eslint/eslint-plugin": "^8.10.0",
+    "@typescript-eslint/parser": "^8.7.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.1",
+    "eslint": "^9.13.0",
+    "typescript": "^5.6.3"
+  }
+}
