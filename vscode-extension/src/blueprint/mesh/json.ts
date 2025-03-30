@@ -13,27 +13,38 @@ export class BlueprintGenerator {
   preamble: Preamble;
   validators: Validator[];
   definitions: Definitions;
+
+  // Visited definition key
   visited: Set<string> = new Set();
 
+  // Custom code implementation - Set of titles
   customs: Set<string> = new Set();
+
+  // Imports code implementation - Set of titles
   imports: Set<string> = new Set();
 
+  // Map of definition key to title
+  defTitleMap: Record<string, string> = {};
+
+  // Map of definition title to code implementation
+  titleCodeMap: Record<string, string> = {};
+
+  // Map of definition title to dependencies' titles
+  titleDepsMap: Record<string, string[]> = {};
+
+  // Map of definition title to import names
+  titleImportsMap: Record<string, string[]> = {};
+
+  // Snippets for final code
   importSnippet: string[] = [];
   blueprintSnippet: string[] = [];
   typeSnippet: string[] = [];
-
-  defTitleMap: Record<string, string> = {};
-  defCodeMap: Record<string, string> = {};
-  defDepsMap: Record<string, string[]> = {};
-  defImportsMap: Record<string, string[]> = {};
 
   constructor(blueprint: any) {
     this.preamble = blueprint.preamble;
     this.validators = blueprint.validators;
     this.definitions = blueprint.definitions;
   }
-
-  addType() {}
 
   addBlueprint() {}
 
@@ -45,13 +56,22 @@ export class BlueprintGenerator {
   }
 
   generateBlueprints() {
+    const plutusVesion = this.preamble.version;
+
     this.validators.forEach((validator) => {
       // loop through validators check needed
+      let redeemer = "";
+      let datum = "";
+      let parameters = [];
+
       if (validator.parameters) {
-        validator.parameters.forEach((parameter) => {
+        let parameters = validator.parameters.map((parameter) => {
           this.checkValidatorSchemas(
             this.getDefinitionKey(parameter.schema.$ref)
           );
+          const defKey = this.getDefinitionKey(parameter.schema.$ref);
+          const title = this.defTitleMap[defKey];
+          return this.titleCodeMap[title];
         });
       }
 
@@ -66,6 +86,8 @@ export class BlueprintGenerator {
           this.getDefinitionKey(validator.datum.schema.$ref)
         );
       }
+
+      // Genearte blueprint code
     });
     return this;
   }
@@ -75,7 +97,7 @@ export class BlueprintGenerator {
       this.customs.forEach((custom) => {
         const customTitle = this.defTitleMap[custom];
         this.typeSnippet.push(
-          `export type ${customTitle} = ${this.defCodeMap[custom]};`
+          `export type ${customTitle} = ${this.titleCodeMap[customTitle]};`
         );
       });
     }
@@ -83,7 +105,7 @@ export class BlueprintGenerator {
   }
 
   generateImports() {
-    Object.values(this.defImportsMap).forEach((importNames) => {
+    Object.values(this.titleImportsMap).forEach((importNames) => {
       importNames.forEach((importName) => {
         this.imports.add(importName);
       });
@@ -101,25 +123,24 @@ export class BlueprintGenerator {
   }
 
   private checkValidatorSchemas(key: string) {
-    if (this.defImportsMap[key]) {
-      const importNames = this.defImportsMap[key];
+    if (key in jsonTypeMap) {
+      this.imports.add(jsonTypeMap[key as keyof typeof jsonTypeMap]);
+      return;
+    }
+    this.customs.add(key);
+
+    const title = this.defTitleMap[key];
+    const importNames = this.titleImportsMap[title];
+    const dependencies = this.titleDepsMap[title];
+    if (importNames) {
       importNames.forEach((importName) => {
         this.imports.add(importName);
       });
       return;
     }
-    if (key) {
-      this.customs.add(key);
-    }
-    // if (this.defImportMap[key]) {
-    //   const toImport = this.defImportMap[key];
-    //   this.imports.add(toImport);
-    // }
-    if (this.defDepsMap[key]) {
-      const dependencies = this.defDepsMap[key];
+    if (dependencies) {
       dependencies.forEach((depRef) => {
         const title = this.defTitleMap[depRef];
-        this.customs.add(title);
         this.checkValidatorSchemas(title);
       });
     }
@@ -132,27 +153,32 @@ export class BlueprintGenerator {
    */
   private traceDefinition(key: string) {
     if (this.visited.has(key)) {
-      return this.defCodeMap[key];
+      const title = this.defTitleMap[key];
+      return this.titleCodeMap[title];
     }
     this.visited.add(key);
 
     if (Object.keys(jsonTypeMap).includes(key)) {
       const value = jsonTypeMap[key as keyof typeof jsonTypeMap];
-      this.addToImportsMap(key, value);
-      this.defCodeMap[key] = value;
+      value.split(" | ").forEach((importName) => {
+        this.addToImportsMap(key, importName);
+      });
+      this.defTitleMap[key] = key;
+      this.titleCodeMap[key] = value;
       return value;
     }
 
     const def = this.definitions[key];
+    const title = def.title || key; // If no title, use the key as title
     const defCode = this.getDefinitionCode(def);
-    this.defTitleMap[key] = def.title || "";
-    this.defCodeMap[key] = defCode;
+    this.defTitleMap[key] = title;
+    this.titleCodeMap[title] = defCode;
     return defCode;
   }
 
   /**
    * Check what the definition is and implement the code
-   * It also add to `defDepsMap` on what the dependencies needed by this definition
+   * It also add to `titleDepsMap` on what the dependencies needed by this definition
    * It also add to `defImportsMap` on what the imports needed this definition
    * @param def The definition json
    * @returns The implementation of the definition code snippet
@@ -164,12 +190,14 @@ export class BlueprintGenerator {
       if (!title) {
         // | IntDefinition
         if (dataType === "integer") {
-          this.addToImportsMap("Int", "Integer");
+          this.defTitleMap.Int = "Integer";
+          this.addToImportsMap("Int", "Integer"); // Int as key of Integer
           return "Integer";
         }
         // | ByteDefinition -> native one
         if (dataType === "bytes") {
-          this.addToImportsMap("ByteArray", "ByteString");
+          this.defTitleMap.ByteArray = "ByteString";
+          this.addToImportsMap("ByteArray", "ByteString"); // ByteArray as key of ByteString
           return "ByteString";
         }
         return "any";
@@ -187,7 +215,7 @@ export class BlueprintGenerator {
         const valueDefRef = this.getDefinitionKey(def.values!.$ref);
         const keyCode = this.traceDefinition(keyDefRef);
         const valueCode = this.traceDefinition(valueDefRef);
-        this.defDepsMap[title] = [keyDefRef, valueDefRef];
+        this.titleDepsMap[title] = [keyDefRef, valueDefRef];
         this.addToImportsMap(title, "Dict");
         return `Dict<${keyCode}, ${valueCode}>`;
       }
@@ -197,7 +225,7 @@ export class BlueprintGenerator {
         if ("$ref" in items!) {
           const itemDefRef = this.getDefinitionKey(items.$ref);
           const itemCode = this.traceDefinition(itemDefRef);
-          this.defDepsMap[title] = [itemDefRef];
+          this.titleDepsMap[title] = [itemDefRef];
           this.addToImportsMap(title, "List");
           return `List<${itemCode}>`;
         }
@@ -207,14 +235,9 @@ export class BlueprintGenerator {
         const valueDefRef = this.getDefinitionKey(items![1].$ref);
         const keyCode = this.traceDefinition(keyDefRef);
         const valueCode = this.traceDefinition(valueDefRef);
-        this.defDepsMap[title] = [keyDefRef, valueDefRef];
+        this.titleDepsMap[title] = [keyDefRef, valueDefRef];
         this.addToImportsMap(title, "Tuple");
         return `Tuple<${keyCode}, ${valueCode}>`;
-      }
-
-      // | ConstructorDefinition;
-      if (dataType === "constructor") {
-        return this.handleConstructor(def, title);
       }
     }
 
@@ -233,7 +256,7 @@ export class BlueprintGenerator {
     if (title === "Option") {
       const someDefRef = this.getDefinitionKey(def.anyOf![0].fields[0]!.$ref);
       const someCode = this.traceDefinition(someDefRef);
-      this.defDepsMap[title] = [someDefRef];
+      this.titleDepsMap[title] = [someDefRef];
       this.addToImportsMap(title, "Option");
       return `Option<${someCode}>`;
     }
@@ -256,7 +279,7 @@ export class BlueprintGenerator {
     fields?.forEach((field) => {
       const fieldDefRef = this.getDefinitionKey(field.$ref);
       const fieldCode = this.traceDefinition(fieldDefRef);
-      this.defDepsMap[currentTitle] = [fieldDefRef];
+      this.titleDepsMap[currentTitle] = [fieldDefRef];
       fieldCodes.push(fieldCode!);
     });
 
@@ -281,14 +304,14 @@ export class BlueprintGenerator {
     return key;
   };
 
-  private addToImportsMap = (defKey: string, importName: string) => {
-    if (!this.defImportsMap[defKey]) {
-      this.defImportsMap[defKey] = [];
+  private addToImportsMap = (title: string, importName: string) => {
+    if (!this.titleImportsMap[title]) {
+      this.titleImportsMap[title] = [];
     }
-    if (this.defImportsMap[defKey].includes(importName)) {
+    if (this.titleImportsMap[title].includes(importName)) {
       return;
     }
-    this.defImportsMap[defKey].push(importName);
+    this.titleImportsMap[title].push(importName);
   };
 
   getFullSnippet = () => [
@@ -332,7 +355,7 @@ export const analyzeScriptJSON = vscode.commands.registerCommand(
 
         let fullSnippet: string[] = blueprint.getFullSnippet();
 
-        const snippet = new vscode.SnippetString(fullSnippet.join("\n"));
+        const snippet = new vscode.SnippetString(fullSnippet.join("\n\n"));
         vscode.window.activeTextEditor?.insertSnippet(snippet);
       }
     });
