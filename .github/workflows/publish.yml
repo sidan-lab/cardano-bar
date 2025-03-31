@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
-      - run: npm run install
+      - run: npm install
       - run: xvfb-run -a npm run test
         if: runner.os == 'Linux'
       - run: npm run test
@@ -92,7 +92,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
-      - run: npm run install
+      - run: npm install
       - name: Publish
         if: success() && startsWith(github.ref, 'refs/tags/')
         run: npm run deploy
