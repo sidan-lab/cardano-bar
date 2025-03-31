@@ -18,7 +18,7 @@ A place for Cardano development tool set across frameworks & libraries.
    - [ ] Aiken - Validators
    - [ ] Aiken - Vodka testing framework
 
-### Offchain Generation
+3. Offchain Generation
 
-- [] Aiken Vodka -> Mesh
-- [] Aiken Vodka -> Whisky
+   - [] Aiken Vodka -> Mesh
+   - [] Aiken Vodka -> Whisky
