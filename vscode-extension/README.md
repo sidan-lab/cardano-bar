@@ -1,28 +1,22 @@
-# Cardano Bar VSCode Extension
+# Cardano Bar - VSCode
 
-## 🚧 Under Construction 🚧
+A place for Cardano development tool set across frameworks & libraries.
 
-## Introduction
+## Tools
 
-VSCode extension for Cardano Development
+### VSCode Extension
 
-## Contribution
+1. CIP-57 Blueprint Parsing
 
-Add or modify the JSON files in the `snippets` folder. The file name should be the language identifier. For example, `mesh-react-hooks.json` for hooks in `@meshsdk/react`.
+   - [x] Typescript - Mesh Types
+   - [ ] Rust - Whisky Types
 
-## Roadmap
+2. Code snippets
 
-### Blueprint Parser
-
-- [] Mesh
-- [] Whisky
-
-### Code Snippet
-
-- [] Mesh
-- [] Aiken
-- [] Whisky
-- [] Vodka
+   - [ ] Typescript - Mesh
+   - [ ] Rust - Whisky
+   - [ ] Aiken - Validators
+   - [ ] Aiken - Vodka testing framework
 
 ### Offchain Generation
 
