@@ -29,6 +29,9 @@ export const jsonTypeMap = {
   ScriptHash: "ScriptHash",
   PolicyId: "PolicyId",
   AssetName: "AssetName",
+  Pairs: "Pairs",
+  Tuple: "Tuple",
+  "cardano/address/Credential": "Credential",
   "cardano/transaction/OutputReference": "OutputReference",
   "cardano/address/Address": "PubKeyAddress | ScriptAddress",
 };

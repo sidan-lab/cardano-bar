@@ -1,11 +1,10 @@
 import * as vscode from "vscode";
-import { analyzeScriptJSON } from "./blueprint";
-// import { analyzeScriptJSON, analyzeScriptMesh } from "./blueprint";
+import { parseBlueprintTS } from "./blueprint";
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log("Cardano devkit extension activated");
+  console.log("Cardano Bar extension activated");
 
-  context.subscriptions.push(analyzeScriptJSON);
+  context.subscriptions.push(parseBlueprintTS);
 
   // context.subscriptions.push(analyzeScriptMesh);
 }

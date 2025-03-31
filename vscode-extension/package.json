@@ -1,7 +1,7 @@
 {
   "name": "cardano-bar-vscode",
   "icon": "icon.png",
-  "displayName": "Cardano Devkit (Alpha)",
+  "displayName": "Cardano Bar",
   "description": "A VSCode extension for Cardano development",
   "publisher": "sidan-lab",
   "version": "0.0.1",
@@ -23,12 +23,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "cardano-extension.analyzeScriptJSON",
-        "title": "Analyze Script (JSON data type)"
-      },
-      {
-        "command": "cardano-extension.analyzeScriptMesh",
-        "title": "Analyze Script (Mesh data type)"
+        "command": "cardano-bar.parseBlueprintMesh",
+        "title": "Parse Blueprint to Typescript - Mesh"
       }
     ],
     "snippets": [
@@ -66,7 +62,9 @@
     "lint": "eslint src",
     "test": "vscode-test",
     "deploy": "vsce publish",
-    "local-install": "vsce package && code --install-extension cardano-bar-vscode-$(node -p \"require('./package.json').version\").vsix"
+    "uninstall": "code --uninstall-extension sidan-lab.cardano-bar-vscode && code --force",
+    "local-install": "vsce package && code --install-extension cardano-bar-vscode-$(node -p \"require('./package.json').version\").vsix --force",
+    "local-reinstall": "npm run uninstall && npm run local-install"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
