@@ -1,4 +1,4 @@
-# Cardano Devkit VSCode Extension
+# Cardano Bar VSCode Extension
 
 ## 🚧 Under Construction 🚧
 
