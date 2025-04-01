@@ -20,5 +20,9 @@ A place for Cardano development tool set across frameworks & libraries.
 
 3. Offchain Generation
 
-   - [] Aiken Vodka -> Mesh
-   - [] Aiken Vodka -> Whisky
+   - [ ] Aiken Vodka -> Mesh
+   - [ ] Aiken Vodka -> Whisky
+
+## Ideas and Issues
+
+Please create an issues on [github](https://github.com/sidan-lab/cardano-bar/issues) whenever encounter any issues or suggest some ideas to make this tool better!
