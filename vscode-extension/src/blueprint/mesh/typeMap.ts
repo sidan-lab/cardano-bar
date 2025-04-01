@@ -18,10 +18,7 @@
 //   option: "option",
 // };
 
-// A list of mesh types to be skipped for imports and generation
-export const basicTypeList = ["List", "Bool", "Option", "Dict"];
-
-export const jsonTypeMap = {
+export const jsonImportCodeMap = {
   Int: "Integer",
   Bool: "Bool",
   ByteArray: "ByteString",
@@ -31,7 +28,15 @@ export const jsonTypeMap = {
   AssetName: "AssetName",
   Pairs: "Pairs",
   Tuple: "Tuple",
+  Option: "Option",
   "cardano/address/Credential": "Credential",
   "cardano/transaction/OutputReference": "OutputReference",
   "cardano/address/Address": "PubKeyAddress | ScriptAddress",
+};
+
+export const blueprintImportCodeMap = {
+  spend: "SpendingBlueprint",
+  mint: "MintingBlueprint",
+  withdraw: "WithdrawalBlueprint",
+  publish: "WithdrawalBlueprint",
 };

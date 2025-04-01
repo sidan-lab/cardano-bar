@@ -1,5 +1,11 @@
-export class TSCodeBuilder {
-  static spendJson = (
+import { ICodeBuilder } from ".";
+import { capitalizedFirstLetter, snakeToCamelCase } from "../../utils";
+import { ScriptPurpose } from "../types";
+
+export class TSCodeBuilder implements ICodeBuilder {
+  typePackage = () => "@meshsdk/core";
+
+  spendJson = (
     blueprintName: string,
     validatorIndex: number,
     parameters: string[],
@@ -26,20 +32,15 @@ export class TSCodeBuilder {
     code += `\n`;
     code +=
       parameters.length > 0
-        ? TSCodeBuilder.createTypeCheckMethod(
-            "params",
-            `[${parameters.join(", ")}]`
-          )
+        ? this.createTypeCheckMethod("params", `[${parameters.join(", ")}]`)
         : ``;
-    code += datum ? TSCodeBuilder.createTypeCheckMethod("datum", datum) : ``;
-    code += redeemer
-      ? TSCodeBuilder.createTypeCheckMethod("redeemer", redeemer)
-      : ``;
+    code += datum ? this.createTypeCheckMethod("datum", datum) : ``;
+    code += redeemer ? this.createTypeCheckMethod("redeemer", redeemer) : ``;
     code += `}\n`;
     return code;
   };
 
-  static mintJson = (
+  mintJson = (
     blueprintName: string,
     validatorIndex: number,
     parameters: string[]
@@ -64,16 +65,13 @@ export class TSCodeBuilder {
     code += `\n`;
     code +=
       parameters.length > 0
-        ? TSCodeBuilder.createTypeCheckMethod(
-            "param",
-            `[${parameters.join(", ")}]`
-          )
+        ? this.createTypeCheckMethod("param", `[${parameters.join(", ")}]`)
         : ``;
     code += `}\n`;
     return code;
   };
 
-  static withdrawJson = (
+  withdrawJson = (
     blueprintName: string,
     validatorIndex: number,
     parameters: string[]
@@ -99,40 +97,87 @@ export class TSCodeBuilder {
     code += `\n`;
     code +=
       parameters.length > 0
-        ? TSCodeBuilder.createTypeCheckMethod(
-            "param",
-            `[${parameters.join(", ")}]`
-          )
+        ? this.createTypeCheckMethod("param", `[${parameters.join(", ")}]`)
         : ``;
     code += `}\n`;
     return code;
   };
 
-  static createTypeCheckMethod = (methodName: string, data: string): string => {
-    let code = `  static ${methodName} = (data: ${data}): ${data} => data\n`;
+  createTypeCheckMethod = (methodName: string, data: string): string => {
+    let code = `   ${methodName} = (data: ${data}): ${data} => data\n`;
     return code;
   };
 
-  static importJson = (importName: string, filePath: string) => {
+  importJson = (importName: string, filePath: string) => {
     let code = `import ${importName} from "${filePath}"\n`;
     return code;
   };
 
-  static importPackage = (imports: string[], packageName: string) => {
+  importPackage = (imports: string[], packageName: string) => {
     let code = `import { ${imports.join(", ")} } from "${packageName}"\n`;
     return code;
   };
 
-  static exportType = (typeName: string, typeCode: string) => {
+  exportType = (typeName: string, typeCode: string) => {
     return `export type ${typeName} = ${typeCode};`;
   };
 
-  static constant = (plutusVesion: string) => `const version = "${plutusVesion}"
+  constant = (plutusVesion: string) => `const version = "${plutusVesion}"
 const networkId = 0; // 0 for testnet; 1 for mainnet`;
 
-  static spendConstants = () => `
+  spendConstants = () => `
 // Every spending validator would compile into an address with an staking key hash
 // Recommend replace with your own stake key / script hash
 const stakeKeyHash = ""
 const isStakeScriptCredential = false`;
+
+  getValVariableName = (validatorTitle: string) => {
+    const valFuncName = validatorTitle.split(".");
+    return snakeToCamelCase(valFuncName[valFuncName.length - 2]) + "Blueprint";
+  };
+
+  getOrTypeCode = (types: string[]): string => types.join(" | ");
+
+  getCodeImportList = (importCode: string): string[] => importCode.split(" | ");
+
+  getBlueprintName = (blueprintName: string, purpose: ScriptPurpose): string =>
+    `${blueprintName}${capitalizedFirstLetter(purpose)}`;
+
+  any = (): string => "any";
+
+  pairs = (key: string, value: string): string => `Pairs<${key}, ${value}>`;
+
+  list = (itemCode: string): string => `List<${itemCode}>`;
+
+  tuple = (key: string, value: string): string => `Tuple<${key}, ${value}>`;
+
+  option = (someCode: string): string => `Option<${someCode}>`;
+
+  constr = (
+    index: number,
+    fieldCodes: string[]
+  ): { toImport: string; constructorCode: string } => {
+    switch (index) {
+      case 0:
+        return {
+          toImport: "ConStr0",
+          constructorCode: `ConStr0<[${fieldCodes.join(", ")}]>`,
+        };
+      case 1:
+        return {
+          toImport: "ConStr1",
+          constructorCode: `ConStr1<[${fieldCodes.join(", ")}]>`,
+        };
+      case 2:
+        return {
+          toImport: "ConStr2",
+          constructorCode: `ConStr2<[${fieldCodes.join(", ")}]>`,
+        };
+      default:
+        return {
+          toImport: "ConStr",
+          constructorCode: `ConStr<${index}, [${fieldCodes.join(", ")}]>`,
+        };
+    }
+  };
 }

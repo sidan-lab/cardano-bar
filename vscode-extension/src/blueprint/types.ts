@@ -216,3 +216,5 @@ export type Validator = {
   dataType: "validator";
   code: string;
 };
+
+export type ScriptPurpose = "spend" | "mint" | "withdraw" | "publish";

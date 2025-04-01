@@ -1,6 +1,9 @@
 import * as vscode from "vscode";
 import path from "path";
-import fs from "fs";
+
+export const capitalizedFirstLetter = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
 export const snakeToCamelCase = (snake: string): string => {
   return snake
