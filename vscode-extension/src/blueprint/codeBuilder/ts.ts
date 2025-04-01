@@ -133,7 +133,7 @@ const isStakeScriptCredential = false`;
 
   getValVariableName = (validatorTitle: string) => {
     const valFuncName = validatorTitle.split(".");
-    return snakeToCamelCase(valFuncName[valFuncName.length - 2]) + "Blueprint";
+    return snakeToCamelCase(valFuncName[valFuncName.length - 2]);
   };
 
   getOrTypeCode = (types: string[]): string => types.join(" | ");
@@ -141,7 +141,7 @@ const isStakeScriptCredential = false`;
   getCodeImportList = (importCode: string): string[] => importCode.split(" | ");
 
   getBlueprintName = (blueprintName: string, purpose: ScriptPurpose): string =>
-    `${blueprintName}${capitalizedFirstLetter(purpose)}`;
+    `${blueprintName}${capitalizedFirstLetter(purpose)}Blueprint`;
 
   any = (): string => "any";
 
