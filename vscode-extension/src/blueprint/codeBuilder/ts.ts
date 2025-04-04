@@ -65,7 +65,7 @@ export class TSCodeBuilder implements ICodeBuilder {
     code += `\n`;
     code +=
       parameters.length > 0
-        ? this.createTypeCheckMethod("param", `[${parameters.join(", ")}]`)
+        ? this.createTypeCheckMethod("params", `[${parameters.join(", ")}]`)
         : ``;
     code += `}\n`;
     return code;
@@ -97,7 +97,7 @@ export class TSCodeBuilder implements ICodeBuilder {
     code += `\n`;
     code +=
       parameters.length > 0
-        ? this.createTypeCheckMethod("param", `[${parameters.join(", ")}]`)
+        ? this.createTypeCheckMethod("params", `[${parameters.join(", ")}]`)
         : ``;
     code += `}\n`;
     return code;
