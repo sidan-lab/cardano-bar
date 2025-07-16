@@ -15,7 +15,7 @@ A place for Cardano development tool set across frameworks & libraries.
 
    - [ ] Typescript - Mesh
    - [ ] Rust - Whisky
-   - [ ] Aiken - Validators
+   - [x] Aiken - Validators
    - [ ] Aiken - Vodka testing framework
 
 ![Alt](https://repobeats.axiom.co/api/embed/6bfa7d72aa0fd0e956c733ddafde00536c1e6dba.svg "Repobeats analytics image")

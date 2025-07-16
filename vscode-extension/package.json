@@ -4,7 +4,7 @@
   "displayName": "Cardano Bar",
   "description": "A VSCode extension for Cardano development",
   "publisher": "sidan-lab",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/sidan-lab/cardano-bar"
@@ -42,7 +42,7 @@
       },
       {
         "language": "aiken",
-        "path": "./snippets/aiken/aiken-helloworld.json"
+        "path": "./snippets/aiken/aiken-validators.json"
       },
       {
         "language": "aiken",
