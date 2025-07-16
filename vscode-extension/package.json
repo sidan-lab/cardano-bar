@@ -4,7 +4,7 @@
   "displayName": "Cardano Bar",
   "description": "A VSCode extension for Cardano development",
   "publisher": "sidan-lab",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/sidan-lab/cardano-bar"
@@ -24,7 +24,7 @@
     "commands": [
       {
         "command": "cardano-bar.parseBlueprintMesh",
-        "title": "Parse Blueprint to Typescript - Mesh"
+        "title": "Cardano Bar: Parse Blueprint to Mesh Types (TypeScript)"
       }
     ],
     "snippets": [
