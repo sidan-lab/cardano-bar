@@ -52,7 +52,7 @@ export interface ICodeBuilder {
 
   list(itemCode: string): string;
 
-  tuple(key: string, value: string): string;
+  tuple(...itemCodes: string[]): string;
 
   option(someCode: string): string;
 
