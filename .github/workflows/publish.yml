@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: vscode-extension
+        working-directory: apps/vscode-extension
     steps:
       - name: Checkout
         uses: actions/checkout@v4
