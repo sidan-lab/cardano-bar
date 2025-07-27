@@ -4,7 +4,7 @@
   "displayName": "Cardano Bar",
   "description": "A VSCode extension for Cardano development",
   "publisher": "sidan-lab",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "repository": {
     "type": "git",
     "url": "https://github.com/sidan-lab/cardano-bar"
@@ -68,7 +68,7 @@
     "local-reinstall": "npm run uninstall && npm run local-install"
   },
   "dependencies": {
-    "@sidan-lab/cardano-bar": "*"
+    "@sidan-lab/cardano-bar": "0.0.7"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

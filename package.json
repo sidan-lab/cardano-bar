@@ -6,7 +6,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "local-install": "turbo run local-install"
+    "local-install": "turbo run local-install",
+    "bump": "./bump-version.sh"
   },
   "devDependencies": {
     "turbo": "latest"
