@@ -23,38 +23,123 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 18.x
-      - run: npm install
+      - name: Install dependencies
+        run: npm install
+      - name: Lint
+        run: npm run lint
+      - name: Build packages
+        run: |
+          cd packages/cardano-bar
+          npm run build
+      - name: Build VSCode extension
+        run: |
+          cd apps/vscode-extension
+          npm run package
       - run: xvfb-run -a npm run test
         if: runner.os == 'Linux'
       - run: npm run test
         if: runner.os != 'Linux'
 
-  publish:
-    needs: [build]
+  check-version:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/vscode-extension
+    if: github.event.pull_request.merged == true
+    outputs:
+      core-version-updated: ${{ steps.compare-versions.outputs.core-version-updated }}
+      vscode-version-updated: ${{ steps.compare-versions.outputs.vscode-version-updated }}
     steps:
-      - name: Checkout
+      - name: Checkout main branch at commit before merge
         uses: actions/checkout@v4
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Get package version from main branch before merge
+        id: pre-merge-version
+        run: |
+          CORE_PRE_MERGE_VERSION=$(node -p "require('./packages/cardano-bar/package.json').version")
+          VSCODE_PRE_MERGE_VERSION=$(node -p "require('./apps/vscode-extension/package.json').version")
+          
+          echo "core_pre_merge_version=$CORE_PRE_MERGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "vscode_pre_merge_version=$VSCODE_PRE_MERGE_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout main branch at commit after merge
+        uses: actions/checkout@v4
+        with:
+          ref: "main"
+
+      - name: Get package version from main branch after merge
+        id: post-merge-version
+        run: |
+          CORE_POST_MERGE_VERSION=$(node -p "require('./packages/cardano-bar/package.json').version")
+          VSCODE_POST_MERGE_VERSION=$(node -p "require('./apps/vscode-extension/package.json').version")
+          
+          echo "core_post_merge_version=$CORE_POST_MERGE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "vscode_post_merge_version=$VSCODE_POST_MERGE_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Compare versions
+        id: compare-versions
+        run: |
+          if [[ "${{ steps.pre-merge-version.outputs.core_pre_merge_version }}" != "${{ steps.post-merge-version.outputs.core_post_merge_version }}" ]]; then
+              echo "core-version-updated=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "core-version-updated=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [[ "${{ steps.pre-merge-version.outputs.vscode_pre_merge_version }}" != "${{ steps.post-merge-version.outputs.vscode_post_merge_version }}" ]]; then
+              echo "vscode-version-updated=true" >> "$GITHUB_OUTPUT"
+          else
+              echo "vscode-version-updated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish-cardano-bar-core:
+    needs: [build, check-version]
+    if: needs.check-version.outputs.core-version-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 18.x
-      - run: npm install
-      - name: Publish
-        if: success() && startsWith(github.ref, 'refs/tags/')
-        run: npm run deploy
+          registry-url: https://registry.npmjs.org/
+      - name: Install dependencies and build
+        run: |
+          npm install
+          cd packages/cardano-bar
+          npm run build
+      - name: Publish to npm
+        run: cd packages/cardano-bar && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          
+  publish-vscode-extension:
+    needs: [build, check-version]
+    if: needs.check-version.outputs.vscode-version-updated == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          registry-url: https://registry.npmjs.org/
+      - name: Install dependencies and build
+        run: |
+          npm install
+          cd packages/cardano-bar
+          npm run build
+          cd ../../apps/vscode-extension
+          npm run package
+      - name: Publish to VSCode Marketplace
+        run: |
+          cd apps/vscode-extension
+          npm run deploy
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
   github-releases-to-discord:
-    needs: [publish]
+    needs: [publish-cardano-bar-core, publish-vscode-extension]
+    if: always() && (needs.publish-cardano-bar-core.result == 'success' || needs.publish-vscode-extension.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Github Releases To Discord
         uses: SethCohen/github-releases-to-discord@v1
         with:
