@@ -149,7 +149,8 @@ const isStakeScriptCredential = false`;
 
   list = (itemCode: string): string => `List<${itemCode}>`;
 
-  tuple = (key: string, value: string): string => `Tuple<${key}, ${value}>`;
+  tuple = (...itemCodes: string[]): string =>
+    `Tuple<[${itemCodes.join(", ")}]>`;
 
   option = (someCode: string): string => `Option<${someCode}>`;
 

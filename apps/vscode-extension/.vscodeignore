@@ -9,3 +9,16 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 **/.vscode-test.*
+../**
+../../**
+../../../**
+**/node_modules/**
+**/.turbo/**
+.turbo/
+turbo.json
+**/turbo.json
+packages/
+apps/
+*.log
+.env*
+.git/

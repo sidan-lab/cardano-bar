@@ -1,0 +1,23 @@
+{
+  "name": "cardano-bar-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "local-install": "turbo run local-install",
+    "bump": "./bump-version.sh"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "packageManager": "npm@9.6.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "dependencies": {
+    "npm": "^10.8.0"
+  }
+}

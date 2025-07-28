@@ -66,14 +66,9 @@ export type ListDefinition = {
 export type TupleDefinition = {
   title: string;
   dataType: "list";
-  items: [
-    {
-      $ref: string;
-    },
-    {
-      $ref: string;
-    }
-  ];
+  items: {
+    $ref: string;
+  }[];
 };
 
 export type OptionDefinition = {
@@ -182,14 +177,9 @@ export type Definition = {
     | {
         $ref: string;
       }
-    | [
-        {
-          $ref: string;
-        },
-        {
-          $ref: string;
-        }
-      ];
+    | {
+        $ref: string;
+      }[];
   fields?: {
     $ref: string;
   }[];

@@ -309,16 +309,19 @@ export class BlueprintParser {
         }
 
         // | TupleDefinition
-        const keyDefRef = this.getDefinitionKey(items![0].$ref);
-        const valueDefRef = this.getDefinitionKey(items![1].$ref);
-        const keyCode = this.traceDefinition(keyDefRef);
-        const valueCode = this.traceDefinition(valueDefRef);
-        const keyTitle = this.getDefinitionTitle(keyDefRef);
-        const valueTitle = this.getDefinitionTitle(valueDefRef);
-        this.addToDepsMap(title, keyTitle);
-        this.addToDepsMap(title, valueTitle);
+        const itemsArray = items as { $ref: string }[];
+        const itemCodes: string[] = [];
+
+        itemsArray.forEach((item) => {
+          const itemDefRef = this.getDefinitionKey(item.$ref);
+          const itemCode = this.traceDefinition(itemDefRef);
+          const itemTitle = this.getDefinitionTitle(itemDefRef);
+          itemCodes.push(itemCode);
+          this.addToDepsMap(title, itemTitle);
+        });
+
         this.addToImportsMap(title, "Tuple");
-        return this.codeBuilder.tuple(keyCode, valueCode);
+        return this.codeBuilder.tuple(...itemCodes);
       }
     }
 

@@ -1,10 +1,9 @@
 import * as vscode from "vscode";
 import fs from "fs";
+import { BlueprintParser, TSCodeBuilder } from "@sidan-lab/cardano-bar";
 
-import { blueprintImportCodeMap, jsonImportCodeMap } from "./typeMap";
 import { getFileRelativePath } from "../../utils";
-import { TSCodeBuilder } from "../codeBuilder";
-import { BlueprintParser } from "../parser";
+import { blueprintImportCodeMap, jsonImportCodeMap } from "./typeMap";
 
 export const parseBlueprintTS = vscode.commands.registerCommand(
   "cardano-bar.parseBlueprintMesh",
