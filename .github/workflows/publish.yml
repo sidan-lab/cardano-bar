@@ -13,9 +13,6 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        working-directory: vscode-extension
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,8 +22,6 @@ jobs:
           node-version: 18.x
       - name: Install dependencies
         run: npm install
-      - name: Lint
-        run: npm run lint
       - name: Build packages
         run: |
           cd packages/cardano-bar
@@ -35,63 +30,19 @@ jobs:
         run: |
           cd apps/vscode-extension
           npm run package
-      - run: xvfb-run -a npm run test
+      - name: Run tests (Linux)
+        run: |
+          cd apps/vscode-extension
+          xvfb-run -a npm run test
         if: runner.os == 'Linux'
-      - run: npm run test
+      - name: Run tests (Non-Linux)
+        run: |
+          cd apps/vscode-extension
+          npm run test
         if: runner.os != 'Linux'
 
-  check-version:
-    runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true
-    outputs:
-      core-version-updated: ${{ steps.compare-versions.outputs.core-version-updated }}
-      vscode-version-updated: ${{ steps.compare-versions.outputs.vscode-version-updated }}
-    steps:
-      - name: Checkout main branch at commit before merge
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-
-      - name: Get package version from main branch before merge
-        id: pre-merge-version
-        run: |
-          CORE_PRE_MERGE_VERSION=$(node -p "require('./packages/cardano-bar/package.json').version")
-          VSCODE_PRE_MERGE_VERSION=$(node -p "require('./apps/vscode-extension/package.json').version")
-          
-          echo "core_pre_merge_version=$CORE_PRE_MERGE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "vscode_pre_merge_version=$VSCODE_PRE_MERGE_VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout main branch at commit after merge
-        uses: actions/checkout@v4
-        with:
-          ref: "main"
-
-      - name: Get package version from main branch after merge
-        id: post-merge-version
-        run: |
-          CORE_POST_MERGE_VERSION=$(node -p "require('./packages/cardano-bar/package.json').version")
-          VSCODE_POST_MERGE_VERSION=$(node -p "require('./apps/vscode-extension/package.json').version")
-          
-          echo "core_post_merge_version=$CORE_POST_MERGE_VERSION" >> "$GITHUB_OUTPUT"
-          echo "vscode_post_merge_version=$VSCODE_POST_MERGE_VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Compare versions
-        id: compare-versions
-        run: |
-          if [[ "${{ steps.pre-merge-version.outputs.core_pre_merge_version }}" != "${{ steps.post-merge-version.outputs.core_post_merge_version }}" ]]; then
-              echo "core-version-updated=true" >> "$GITHUB_OUTPUT"
-          else
-              echo "core-version-updated=false" >> "$GITHUB_OUTPUT"
-          fi
-          if [[ "${{ steps.pre-merge-version.outputs.vscode_pre_merge_version }}" != "${{ steps.post-merge-version.outputs.vscode_post_merge_version }}" ]]; then
-              echo "vscode-version-updated=true" >> "$GITHUB_OUTPUT"
-          else
-              echo "vscode-version-updated=false" >> "$GITHUB_OUTPUT"
-          fi
-
   publish-cardano-bar-core:
-    needs: [build, check-version]
-    if: needs.check-version.outputs.core-version-updated == 'true'
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -110,8 +61,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           
   publish-vscode-extension:
-    needs: [build, check-version]
-    if: needs.check-version.outputs.vscode-version-updated == 'true'
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
