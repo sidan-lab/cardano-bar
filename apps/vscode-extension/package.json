@@ -25,6 +25,10 @@
       {
         "command": "cardano-bar.parseBlueprintMesh",
         "title": "Cardano Bar: Parse Blueprint to Mesh Types (TypeScript)"
+      },
+      {
+        "command": "cardano-bar.parseBlueprintWhisky",
+        "title": "Cardano Bar: Parse Blueprint to Whisky Types (Rust)"
       }
     ],
     "snippets": [
