@@ -1,9 +1,45 @@
 import { ICodeBuilder } from ".";
-import { capitalizedFirstLetter, snakeToCamelCase } from "../../utils";
 import { ScriptPurpose } from "../types";
 
+// Utility functions
+const capitalizedFirstLetter = (str: string): string => {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+const snakeToCamelCase = (snake: string): string => {
+  return snake
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join("");
+};
+
 export class RSCodeBuilder implements ICodeBuilder {
-  typePackage = () => "whisky-common";
+  typePackage = () => "whisky";
+
+  private generateImports(includeConfig = false): string {
+    let imports = "";
+    imports += `use whisky::*;\n`;
+    imports += `use whisky::data::*;\n`;
+    imports += `use whisky::utils::blueprint::{SpendingBlueprint, MintingBlueprint, WithdrawalBlueprint};\n`;
+    imports += `use whisky::{LanguageVersion, ConstrEnum};\n`;
+    if (includeConfig) {
+      imports += `use crate::config::AppConfig;\n`;
+    }
+    imports += `\n`;
+    return imports;
+  }
+
+  private generateRedeemerEnum(redeemerType: string): string {
+    return `#[derive(Debug, Clone, ConstrEnum)]\npub enum ${redeemerType} {\n    // Add your redeemer variants here\n    DefaultRedeemer,\n}\n\n`;
+  }
+
+  private generateDatumEnum(datumType: string): string {
+    return `#[derive(Debug, Clone, ConstrEnum)]\npub enum ${datumType} {\n    // Add your datum variants here\n    DefaultDatum,\n}\n\n`;
+  }
+
+  private generateMintPolarityEnum(): string {
+    return `#[derive(Debug, Clone, ConstrEnum)]\npub enum MintPolarity {\n    Mint,\n    Burn,\n}\n\n`;
+  }
 
   spendJson = (
     blueprintName: string,
@@ -12,74 +48,61 @@ export class RSCodeBuilder implements ICodeBuilder {
     datum?: string,
     redeemer?: string
   ) => {
-    const structName = `${blueprintName}Script`;
+    const functionName = snakeToCamelCase(blueprintName);
+    const datumType = datum || "ByteString";
+    const redeemerType = redeemer || "ByteString";
+    const paramType =
+      parameters.length > 0 ? `(${parameters.join(", ")})` : "()";
+
     let code = "";
 
-    code += `use whisky_common::models::*;\n`;
-    code += `use whisky_common::interfaces::*;\n`;
-    code += `use serde::{Deserialize, Serialize};\n`;
-    code += `\n`;
+    // Consolidated imports
+    code += this.generateImports(!!(datum || redeemer));
 
-    code += `#[derive(Debug, Clone, Serialize, Deserialize)]\n`;
-    code += `pub struct ${structName} {\n`;
-    code += `    pub compiled_code: String,\n`;
+    // Generate enums if custom types are provided
+    if (redeemer && redeemer !== "ByteString") {
+      code += this.generateRedeemerEnum(redeemer);
+    }
+
+    if (datum && datum !== "ByteString") {
+      code += this.generateDatumEnum(datum);
+    }
+
+    // Generate blueprint function
+    code += `pub fn ${functionName}_spending_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    pub parameters: (${parameters.join(", ")}),\n`;
+      code += `    params: ${paramType},\n`;
     }
-    code += `}\n\n`;
+    code += `) -> SpendingBlueprint<${paramType}, ${redeemerType}, ${datumType}> {\n`;
 
-    code += `impl ${structName} {\n`;
-    if (parameters.length === 0) {
-      code += `    pub fn new() -> Self {\n`;
+    if (datum || redeemer) {
+      code += `    let AppConfig { network_id, .. } = AppConfig::new();\n`;
+      code += `    let mut blueprint = SpendingBlueprint::new(\n`;
+      code += `        LanguageVersion::V3,\n`;
+      code += `        network_id.parse().unwrap(),\n`;
+      code += `        None\n`;
+      code += `    );\n`;
     } else {
-      code += `    pub fn new(params: (${parameters.join(", ")})) -> Self {\n`;
+      code += `    let mut blueprint = SpendingBlueprint::new(\n`;
+      code += `        LanguageVersion::V3,\n`;
+      code += `        0, // network_id: 0 for testnet, 1 for mainnet\n`;
+      code += `        None\n`;
+      code += `    );\n`;
     }
-    code += `        let compiled_code = BLUEPRINT.validators[${validatorIndex}].compiled_code.clone();\n`;
-    code += `        Self {\n`;
-    code += `            compiled_code,\n`;
-    if (parameters.length > 0) {
-      code += `            parameters: params,\n`;
-    }
-    code += `        }\n`;
-    code += `    }\n\n`;
 
-    code += `    pub fn get_script(&self) -> PlutusScript {\n`;
+    code += `    blueprint\n`;
     if (parameters.length === 0) {
-      code += `        PlutusScript::from_hex(&self.compiled_code).unwrap()\n`;
+      code += `        .no_param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `        )\n`;
     } else {
-      code += `        let param_cbor = serialize_params(&self.parameters);\n`;
-      code += `        PlutusScript::apply_params(&self.compiled_code, &param_cbor).unwrap()\n`;
+      code += `        .param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `            &params,\n`;
+      code += `        )\n`;
     }
-    code += `    }\n\n`;
-
-    code += `    pub fn get_address(&self, network_id: u8, stake_credential: Option<StakeCredential>) -> Address {\n`;
-    code += `        let script = self.get_script();\n`;
-    code += `        Address::from_script(script.hash(), network_id, stake_credential)\n`;
-    code += `    }\n`;
-
-    if (datum) {
-      code += `\n    pub fn validate_datum(&self, datum: &${datum}) -> bool {\n`;
-      code += `        // Add datum validation logic here\n`;
-      code += `        true\n`;
-      code += `    }\n`;
-    }
-
-    if (redeemer) {
-      code += `\n    pub fn validate_redeemer(&self, redeemer: &${redeemer}) -> bool {\n`;
-      code += `        // Add redeemer validation logic here\n`;
-      code += `        true\n`;
-      code += `    }\n`;
-    }
-
-    code += `}\n\n`;
-
-    code += `impl SpendingScript for ${structName} {\n`;
-    code += `    fn get_script_hash(&self) -> ScriptHash {\n`;
-    code += `        self.get_script().hash()\n`;
-    code += `    }\n\n`;
-    code += `    fn get_address(&self, network_id: u8, stake_credential: Option<StakeCredential>) -> Address {\n`;
-    code += `        self.get_address(network_id, stake_credential)\n`;
-    code += `    }\n`;
+    code += `        .unwrap();\n`;
+    code += `    blueprint\n`;
     code += `}\n`;
 
     return code;
@@ -90,58 +113,40 @@ export class RSCodeBuilder implements ICodeBuilder {
     validatorIndex: number,
     parameters: string[]
   ) => {
-    const structName = `${blueprintName}Script`;
+    const functionName = snakeToCamelCase(blueprintName);
+    const paramType =
+      parameters.length > 0 ? `(${parameters.join(", ")})` : "()";
+
     let code = "";
 
-    code += `use whisky_common::models::*;\n`;
-    code += `use whisky_common::interfaces::*;\n`;
-    code += `use serde::{Deserialize, Serialize};\n`;
-    code += `\n`;
+    // Consolidated imports
+    code += this.generateImports();
 
-    code += `#[derive(Debug, Clone, Serialize, Deserialize)]\n`;
-    code += `pub struct ${structName} {\n`;
-    code += `    pub compiled_code: String,\n`;
+    // Generate MintPolarity enum
+    code += this.generateMintPolarityEnum();
+
+    // Generate blueprint function
+    code += `pub fn ${functionName}_minting_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    pub parameters: (${parameters.join(", ")}),\n`;
+      code += `    params: ${paramType},\n`;
     }
-    code += `}\n\n`;
+    code += `) -> MintingBlueprint<${paramType}, MintPolarity> {\n`;
 
-    code += `impl ${structName} {\n`;
+    code += `    let mut blueprint = MintingBlueprint::new(LanguageVersion::V3);\n`;
+    code += `    blueprint\n`;
+
     if (parameters.length === 0) {
-      code += `    pub fn new() -> Self {\n`;
+      code += `        .no_param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `        )\n`;
     } else {
-      code += `    pub fn new(params: (${parameters.join(", ")})) -> Self {\n`;
+      code += `        .param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `            &params,\n`;
+      code += `        )\n`;
     }
-    code += `        let compiled_code = BLUEPRINT.validators[${validatorIndex}].compiled_code.clone();\n`;
-    code += `        Self {\n`;
-    code += `            compiled_code,\n`;
-    if (parameters.length > 0) {
-      code += `            parameters: params,\n`;
-    }
-    code += `        }\n`;
-    code += `    }\n\n`;
-
-    code += `    pub fn get_script(&self) -> PlutusScript {\n`;
-    if (parameters.length === 0) {
-      code += `        PlutusScript::from_hex(&self.compiled_code).unwrap()\n`;
-    } else {
-      code += `        let param_cbor = serialize_params(&self.parameters);\n`;
-      code += `        PlutusScript::apply_params(&self.compiled_code, &param_cbor).unwrap()\n`;
-    }
-    code += `    }\n\n`;
-
-    code += `    pub fn get_policy_id(&self) -> PolicyId {\n`;
-    code += `        PolicyId::from_script_hash(self.get_script().hash())\n`;
-    code += `    }\n`;
-    code += `}\n\n`;
-
-    code += `impl MintingScript for ${structName} {\n`;
-    code += `    fn get_script_hash(&self) -> ScriptHash {\n`;
-    code += `        self.get_script().hash()\n`;
-    code += `    }\n\n`;
-    code += `    fn get_policy_id(&self) -> PolicyId {\n`;
-    code += `        self.get_policy_id()\n`;
-    code += `    }\n`;
+    code += `        .unwrap();\n`;
+    code += `    blueprint\n`;
     code += `}\n`;
 
     return code;
@@ -152,63 +157,46 @@ export class RSCodeBuilder implements ICodeBuilder {
     validatorIndex: number,
     parameters: string[]
   ) => {
-    const structName = `${blueprintName}Script`;
+    const functionName = snakeToCamelCase(blueprintName);
+    const paramType =
+      parameters.length > 0 ? `(${parameters.join(", ")})` : "()";
+
     let code = "";
 
-    code += `use whisky_common::models::*;\n`;
-    code += `use whisky_common::interfaces::*;\n`;
-    code += `use serde::{Deserialize, Serialize};\n`;
-    code += `\n`;
+    // Consolidated imports
+    code += this.generateImports();
 
-    code += `#[derive(Debug, Clone, Serialize, Deserialize)]\n`;
-    code += `pub struct ${structName} {\n`;
-    code += `    pub compiled_code: String,\n`;
+    // Generate blueprint function
+    code += `pub fn ${functionName}_withdrawal_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    pub parameters: (${parameters.join(", ")}),\n`;
+      code += `    params: ${paramType},\n`;
     }
-    code += `}\n\n`;
+    code += `) -> WithdrawalBlueprint<${paramType}, ByteString> {\n`;
 
-    code += `impl ${structName} {\n`;
+    code += `    let mut blueprint = WithdrawalBlueprint::new(\n`;
+    code += `        LanguageVersion::V3,\n`;
+    code += `        0 // network_id: 0 for testnet, 1 for mainnet\n`;
+    code += `    );\n`;
+    code += `    blueprint\n`;
+
     if (parameters.length === 0) {
-      code += `    pub fn new() -> Self {\n`;
+      code += `        .no_param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `        )\n`;
     } else {
-      code += `    pub fn new(params: (${parameters.join(", ")})) -> Self {\n`;
+      code += `        .param_script(\n`;
+      code += `            BLUEPRINT.validators[${validatorIndex}].compiled_code.as_str(),\n`;
+      code += `            &params,\n`;
+      code += `        )\n`;
     }
-    code += `        let compiled_code = BLUEPRINT.validators[${validatorIndex}].compiled_code.clone();\n`;
-    code += `        Self {\n`;
-    code += `            compiled_code,\n`;
-    if (parameters.length > 0) {
-      code += `            parameters: params,\n`;
-    }
-    code += `        }\n`;
-    code += `    }\n\n`;
-
-    code += `    pub fn get_script(&self) -> PlutusScript {\n`;
-    if (parameters.length === 0) {
-      code += `        PlutusScript::from_hex(&self.compiled_code).unwrap()\n`;
-    } else {
-      code += `        let param_cbor = serialize_params(&self.parameters);\n`;
-      code += `        PlutusScript::apply_params(&self.compiled_code, &param_cbor).unwrap()\n`;
-    }
-    code += `    }\n\n`;
-
-    code += `    pub fn get_stake_address(&self, network_id: u8) -> StakeAddress {\n`;
-    code += `        StakeAddress::from_script_hash(self.get_script().hash(), network_id)\n`;
-    code += `    }\n`;
-    code += `}\n\n`;
-
-    code += `impl WithdrawalScript for ${structName} {\n`;
-    code += `    fn get_script_hash(&self) -> ScriptHash {\n`;
-    code += `        self.get_script().hash()\n`;
-    code += `    }\n\n`;
-    code += `    fn get_stake_address(&self, network_id: u8) -> StakeAddress {\n`;
-    code += `        self.get_stake_address(network_id)\n`;
-    code += `    }\n`;
+    code += `        .unwrap();\n`;
+    code += `    blueprint\n`;
     code += `}\n`;
 
     return code;
   };
 
+  // ... rest of the methods remain the same
   createTypeCheckMethod = (methodName: string, data: string): string => {
     return `    pub fn validate_${methodName}(&self, ${methodName}: &${data}) -> bool {\n        true\n    }\n`;
   };
