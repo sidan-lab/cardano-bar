@@ -1,89 +1,89 @@
 {
-  "name": "cardano-bar-vscode",
-  "icon": "icon.png",
-  "displayName": "Cardano Bar",
-  "description": "A VSCode extension for Cardano development",
-  "publisher": "sidan-lab",
-  "version": "0.0.7",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/sidan-lab/cardano-bar"
-  },
-  "engines": {
-    "vscode": "^1.65.0"
-  },
-  "categories": [
-    "Other",
-    "Snippets"
-  ],
-  "license": "SEE LICENSE IN LICENSE",
-  "rootDir": "./",
-  "activationEvents": [],
-  "main": "./out/extension.js",
-  "contributes": {
-    "commands": [
-      {
-        "command": "cardano-bar.parseBlueprintMesh",
-        "title": "Cardano Bar: Parse Blueprint to Mesh Types (TypeScript)"
-      }
-    ],
-    "snippets": [
-      {
-        "language": "typescript",
-        "path": "./snippets/mesh/mesh-txbuilder.json"
-      },
-      {
-        "language": "typescript",
-        "path": "./snippets/mesh/mesh-wallet-hooks.json"
-      },
-      {
-        "language": "typescript",
-        "path": "./snippets/mesh/mesh-blueprint-utils.json"
-      },
-      {
-        "language": "aiken",
-        "path": "./snippets/aiken/aiken-validators.json"
-      },
-      {
-        "language": "aiken",
-        "path": "./snippets/vodka/vodka-helloworld.json"
-      },
-      {
-        "language": "rust",
-        "path": "./snippets/whisky/whisky-helloworld.json"
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src",
-    "test": "vscode-test",
-    "deploy": "vsce publish",
-    "uninstall": "code --uninstall-extension sidan-lab.cardano-bar-vscode && code --force",
-    "local-install": "npm run package && vsce package && code --install-extension cardano-bar-vscode-$(node -p \"require('./package.json').version\").vsix --force",
-    "local-reinstall": "npm run uninstall && npm run local-install"
-  },
-  "dependencies": {
-    "@sidan-lab/cardano-bar": "0.0.7"
-  },
-  "devDependencies": {
-    "@types/mocha": "^10.0.10",
-    "@types/node": "^22.9.0",
-    "@types/vscode": "^1.65.0",
-    "@typescript-eslint/eslint-plugin": "^8.10.0",
-    "@typescript-eslint/parser": "^8.7.0",
-    "@vscode/test-cli": "^0.0.10",
-    "@vscode/test-electron": "^2.4.1",
-    "@vscode/vsce": "^3.2.1",
-    "eslint": "^9.13.0",
-    "ts-loader": "^9.5.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "webpack": "^5.100.2",
-    "webpack-cli": "^6.0.1"
-  }
+	"name": "cardano-bar-vscode",
+	"icon": "icon.png",
+	"displayName": "Cardano Bar",
+	"description": "A VSCode extension for Cardano development",
+	"publisher": "sidan-lab",
+	"version": "0.0.8",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sidan-lab/cardano-bar"
+	},
+	"engines": {
+		"vscode": "^1.65.0"
+	},
+	"categories": [
+		"Other",
+		"Snippets"
+	],
+	"license": "SEE LICENSE IN LICENSE",
+	"rootDir": "./",
+	"activationEvents": [],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "cardano-bar.parseBlueprintMesh",
+				"title": "Cardano Bar: Parse Blueprint to Mesh Types (TypeScript)"
+			}
+		],
+		"snippets": [
+			{
+				"language": "typescript",
+				"path": "./snippets/mesh/mesh-txbuilder.json"
+			},
+			{
+				"language": "typescript",
+				"path": "./snippets/mesh/mesh-wallet-hooks.json"
+			},
+			{
+				"language": "typescript",
+				"path": "./snippets/mesh/mesh-blueprint-utils.json"
+			},
+			{
+				"language": "aiken",
+				"path": "./snippets/aiken/aiken-validators.json"
+			},
+			{
+				"language": "aiken",
+				"path": "./snippets/vodka/vodka-helloworld.json"
+			},
+			{
+				"language": "rust",
+				"path": "./snippets/whisky/whisky-helloworld.json"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run package",
+		"compile": "webpack",
+		"watch": "webpack --watch",
+		"package": "webpack --mode production --devtool hidden-source-map",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src",
+		"test": "vscode-test",
+		"deploy": "vsce publish",
+		"uninstall": "code --uninstall-extension sidan-lab.cardano-bar-vscode && code --force",
+		"local-install": "npm run package && vsce package && code --install-extension cardano-bar-vscode-$(node -p \"require('./package.json').version\").vsix --force",
+		"local-reinstall": "npm run uninstall && npm run local-install"
+	},
+	"dependencies": {
+		"@sidan-lab/cardano-bar": "0.0.8"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^22.9.0",
+		"@types/vscode": "^1.65.0",
+		"@typescript-eslint/eslint-plugin": "^8.10.0",
+		"@typescript-eslint/parser": "^8.7.0",
+		"@vscode/test-cli": "^0.0.10",
+		"@vscode/test-electron": "^2.4.1",
+		"@vscode/vsce": "^3.2.1",
+		"eslint": "^9.13.0",
+		"ts-loader": "^9.5.2",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.6.3",
+		"webpack": "^5.100.2",
+		"webpack-cli": "^6.0.1"
+	}
 }

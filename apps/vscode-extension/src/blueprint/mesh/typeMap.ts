@@ -40,6 +40,7 @@ export const jsonImportCodeMap = {
 	"cardano/assets/PolicyId": "PolicyId",
 	"aiken/crypto/VerificationKeyHash": "PubKeyHash",
 	"aiken/crypto/VerificationKey": "VerificationKey",
+	"aiken/crypto/ScriptHash": "ScriptHash",
 };
 
 export const blueprintImportCodeMap = {
