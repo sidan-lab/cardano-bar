@@ -134,7 +134,8 @@ export class RSCodeBuilder {
     }
     code += `) -> MintingBlueprint<${paramType}, ${redeemerType}> {\n`;
 
-    code += `    let mut blueprint = MintingBlueprint::new(LanguageVersion::V3);\n`;
+    code += `    let app_config = AppConfig::new();\n`;
+    code += `    let mut blueprint = MintingBlueprint::new(app_config.plutus_version);\n`;
 
     if (parameters.length === 0) {
       code += `    blueprint\n`;
@@ -513,8 +514,8 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
             }
           }
 
-          // Standalone unit constructor
-          return `#[derive(Clone, Debug, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<()>);`;
+          // Standalone unit constructor - use type alias instead of struct wrapper
+          return `pub type ${typeName} = Constr${index}<()>;`;
         } else {
           // Constructor with fields
           // Parse fields from "(Type1, Type2, ...)" format
@@ -938,7 +939,7 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
 
   constant = (plutusVersion: string) =>
     `pub struct AppConfig {
-    pub plutus_version: String,
+    pub plutus_version: LanguageVersion,
     pub network_id: u8,
     pub stake_key_hash: Option<String>,
     pub is_stake_script_credential: bool,
@@ -947,7 +948,7 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
 impl AppConfig {
     pub fn new() -> Self {
         Self {
-            plutus_version: "${plutusVersion}".to_string(),
+            plutus_version: LanguageVersion::${plutusVersion},
             network_id: 0,
             stake_key_hash: None,
             is_stake_script_credential: false,
