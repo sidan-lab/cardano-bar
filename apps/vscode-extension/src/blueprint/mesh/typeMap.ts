@@ -19,24 +19,33 @@
 // };
 
 export const jsonImportCodeMap = {
-  Int: "Integer",
-  Bool: "Bool",
-  ByteArray: "ByteString",
-  VerificationKeyHash: "PubKeyHash",
-  ScriptHash: "ScriptHash",
-  PolicyId: "PolicyId",
-  AssetName: "AssetName",
-  Pairs: "Pairs",
-  Tuple: "Tuple",
-  Option: "Option",
-  "cardano/address/Credential": "Credential",
-  "cardano/transaction/OutputReference": "OutputReference",
-  "cardano/address/Address": "PubKeyAddress | ScriptAddress",
+	Int: "Integer",
+	Bool: "Bool",
+	ByteArray: "ByteString",
+	ScriptHash: "ScriptHash",
+	PolicyId: "PolicyId",
+	AssetName: "AssetName",
+	Pairs: "Pairs",
+
+	Tuple: "Tuple",
+	Option: "Option",
+	"cardano/address/Credential": "Credential",
+	"cardano/transaction/OutputReference": "OutputReference",
+	"cardano/address/Address": "PubKeyAddress | ScriptAddress",
+
+	List: "List",
+	VerificationKey: "VerificationKey",
+	VerificationKeyHash: "PubKeyHash",
+	"cardano/assets/AssetName": "AssetName",
+	"cardano/assets/PolicyId": "PolicyId",
+	"aiken/crypto/VerificationKeyHash": "PubKeyHash",
+	"aiken/crypto/VerificationKey": "VerificationKey",
+	"aiken/crypto/ScriptHash": "ScriptHash",
 };
 
 export const blueprintImportCodeMap = {
-  spend: "SpendingBlueprint",
-  mint: "MintingBlueprint",
-  withdraw: "WithdrawalBlueprint",
-  publish: "WithdrawalBlueprint",
+	spend: "SpendingBlueprint",
+	mint: "MintingBlueprint",
+	withdraw: "WithdrawalBlueprint",
+	publish: "WithdrawalBlueprint",
 };
