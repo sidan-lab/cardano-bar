@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import fs from "fs";
-import { BlueprintParser, TSCodeBuilder } from "@sidan-lab/cardano-bar";
+import { TypeScriptBlueprintParser } from "@sidan-lab/cardano-bar";
 
 import { getFileRelativePath } from "../../utils";
 import { blueprintImportCodeMap, jsonImportCodeMap } from "./typeMap";
@@ -28,11 +28,10 @@ export const parseBlueprintTS = vscode.commands.registerCommand(
         const data = fs.readFileSync(selectedFilePath, "utf8");
 
         const script = JSON.parse(data);
-        const blueprint = new BlueprintParser(
+        const blueprint = new TypeScriptBlueprintParser(
           script,
           jsonImportCodeMap,
-          blueprintImportCodeMap,
-          new TSCodeBuilder()
+          blueprintImportCodeMap
         );
 
         blueprint

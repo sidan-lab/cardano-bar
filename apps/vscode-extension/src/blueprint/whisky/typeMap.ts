@@ -1,23 +1,3 @@
-// export const jsonTypeMap = {
-//   WithdrawalScriptHashes: "WithdrawalScriptHashes",
-//   ScriptHash: "ScriptHash",
-//   KeyHash: "PubKeyHash",
-//   Address: "PubKeyAddress | ScriptAddress",
-//   PolicyId: "PolicyId",
-//   ByteArray: "ByteString",
-//   Int: "Integer",
-// };
-
-// export const meshTypeMap = {
-//   bytestring: "string",
-//   int: "bigint",
-//   bool: "MBool",
-//   tuple: "MTuple",
-//   keyhash: "pubKeyHash",
-//   address: "scriptAddress",
-//   option: "option",
-// };
-
 export const jsonImportCodeMap = {
   Int: "Integer",
   Bool: "Bool",
@@ -25,20 +5,20 @@ export const jsonImportCodeMap = {
   ScriptHash: "ScriptHash",
   PolicyId: "PolicyId",
   AssetName: "AssetName",
-  Pairs: "Pairs",
+  Pairs: "Map",
 
   Tuple: "Tuple",
-  Option: "Option",
+  // Option: "Option",
   "cardano/address/Credential": "Credential",
   "cardano/transaction/OutputReference": "OutputReference",
-  "cardano/address/Address": "PubKeyAddress | ScriptAddress",
+  "cardano/address/Address": "Address",
 
   List: "List",
   VerificationKey: "VerificationKey",
-  VerificationKeyHash: "PubKeyHash",
+  VerificationKeyHash: "VerificationKeyHash",
   "cardano/assets/AssetName": "AssetName",
   "cardano/assets/PolicyId": "PolicyId",
-  "aiken/crypto/VerificationKeyHash": "PubKeyHash",
+  "aiken/crypto/VerificationKeyHash": "VerificationKeyHash",
   "aiken/crypto/VerificationKey": "VerificationKey",
   "aiken/crypto/ScriptHash": "ScriptHash",
 };
@@ -48,4 +28,18 @@ export const blueprintImportCodeMap = {
   mint: "MintingBlueprint",
   withdraw: "WithdrawalBlueprint",
   publish: "WithdrawalBlueprint",
+};
+
+// Rust native type mappings for impl_constr_type! macro parameters
+// Maps whisky types to their Rust native types
+export const rustNativeTypeMap: Record<string, string> = {
+  Integer: "i128",
+  Int: "i128",
+  ByteString: "&str",
+  Bool: "bool",
+  VerificationKeyHash: "&str",
+  PolicyId: "&str",
+  AssetName: "&str",
+  ScriptHash: "&str",
+  Address: "&str",
 };
