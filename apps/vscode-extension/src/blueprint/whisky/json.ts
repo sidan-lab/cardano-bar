@@ -1,15 +1,19 @@
 import * as vscode from "vscode";
 import fs from "fs";
-import { BlueprintParser, TSCodeBuilder } from "@sidan-lab/cardano-bar";
+import { RustBlueprintParser } from "@sidan-lab/cardano-bar";
 
 import { getFileRelativePath } from "../../utils";
-import { blueprintImportCodeMap, jsonImportCodeMap } from "./typeMap";
+import {
+  blueprintImportCodeMap,
+  jsonImportCodeMap,
+  rustNativeTypeMap,
+} from "./typeMap";
 
-export const parseBlueprintTS = vscode.commands.registerCommand(
-  "cardano-bar.parseBlueprintMesh",
+export const parseBlueprintRS = vscode.commands.registerCommand(
+  "cardano-bar.parseBlueprintWhisky",
   () => {
     vscode.window.showInformationMessage(
-      "Analyzing Cardano script file for Mesh type..."
+      "Analyzing Cardano script file for Whisky type..."
     );
     const options: vscode.OpenDialogOptions = {
       canSelectMany: false,
@@ -28,11 +32,11 @@ export const parseBlueprintTS = vscode.commands.registerCommand(
         const data = fs.readFileSync(selectedFilePath, "utf8");
 
         const script = JSON.parse(data);
-        const blueprint = new BlueprintParser(
+        const blueprint = new RustBlueprintParser(
           script,
           jsonImportCodeMap,
           blueprintImportCodeMap,
-          new TSCodeBuilder()
+          rustNativeTypeMap
         );
 
         blueprint

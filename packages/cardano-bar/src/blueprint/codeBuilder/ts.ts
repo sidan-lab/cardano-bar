@@ -1,8 +1,7 @@
-import { ICodeBuilder } from ".";
 import { capitalizedFirstLetter, snakeToCamelCase } from "../../utils";
 import { ScriptPurpose } from "../types";
 
-export class TSCodeBuilder implements ICodeBuilder {
+export class TSCodeBuilder {
   typePackage = () => "@meshsdk/core";
 
   spendJson = (
@@ -43,7 +42,8 @@ export class TSCodeBuilder implements ICodeBuilder {
   mintJson = (
     blueprintName: string,
     validatorIndex: number,
-    parameters: string[]
+    parameters: string[],
+    redeemer?: string
   ) => {
     let code = "";
     code = code = `export class ${blueprintName} extends MintingBlueprint {\n`;
@@ -74,7 +74,8 @@ export class TSCodeBuilder implements ICodeBuilder {
   withdrawJson = (
     blueprintName: string,
     validatorIndex: number,
-    parameters: string[]
+    parameters: string[],
+    redeemer?: string
   ) => {
     let code = "";
     code =
@@ -108,7 +109,7 @@ export class TSCodeBuilder implements ICodeBuilder {
     return code;
   };
 
-  importJson = (importName: string, filePath: string) => {
+  importBlueprint = (importName: string, filePath: string) => {
     let code = `import ${importName} from "${filePath}"\n`;
     return code;
   };
@@ -118,7 +119,7 @@ export class TSCodeBuilder implements ICodeBuilder {
     return code;
   };
 
-  exportType = (typeName: string, typeCode: string) => {
+  exportType = (typeName: string, typeCode: string, typeCodeMap?: Record<string, string>) => {
     return `export type ${typeName} = ${typeCode};`;
   };
 
@@ -136,7 +137,7 @@ const isStakeScriptCredential = false`;
     return snakeToCamelCase(valFuncName[valFuncName.length - 2]);
   };
 
-  getOrTypeCode = (types: string[]): string => types.join(" | ");
+  getConstrCode = (types: string[]): string => types.join(" | ");
 
   getCodeImportList = (importCode: string): string[] => importCode.split(" | ");
 
