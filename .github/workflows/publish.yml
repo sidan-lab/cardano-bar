@@ -19,7 +19,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18.x
+          node-version: 22.x
       - name: Install dependencies
         run: npm install
       - name: Build packages
@@ -59,7 +59,7 @@ jobs:
         run: cd packages/cardano-bar && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          
+
   publish-vscode-extension:
     needs: [build]
     runs-on: ubuntu-latest
