@@ -9,7 +9,7 @@ A place for Cardano development tool set across frameworks & libraries.
 1. CIP-57 Blueprint Parsing
 
    - [x] Typescript - Mesh Types
-   - [x] Rust - Whisky Types
+   - [x] Rust - Whisky Types (supporting version `>= 1.0.17`)
 
 2. Code snippets
 

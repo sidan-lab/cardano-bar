@@ -257,7 +257,11 @@ export class RustBlueprintParser {
     }
 
     const def = this.definitions[key];
-    const title = def.title || key; // If no title, use the key as title
+    let title = def.title || key; // If no title, use the key as title
+    // Fix any List$ patterns in the title
+    if (title.includes("List$")) {
+      title = this.fixListPatterns(title);
+    }
     const defCode = this.getDefinitionCode(title, def);
     this.mapDefTitle(key, title);
     this.titleCodeMap[title] = defCode;
@@ -293,29 +297,30 @@ export class RustBlueprintParser {
         if (dataType === "list") {
           if ("$ref" in items!) {
             const itemDefRef = this.getDefinitionKey(items.$ref);
-            const itemCode = this.traceDefinition(itemDefRef);
+            this.traceDefinition(itemDefRef); // Trace to ensure the type is registered
             const itemTitle = this.getDefinitionTitle(itemDefRef);
 
             this.addToDepsMap(title_or_key, itemTitle);
             this.addToImportsMap(title_or_key, "List");
 
-            return this.codeBuilder.list(itemCode);
+            // Use itemTitle (type name) instead of itemCode for cleaner output
+            return this.codeBuilder.list(itemTitle);
           }
 
           // | TupleDefinition
           const itemsArray = items as { $ref: string }[];
-          const itemCodes: string[] = [];
+          const itemTitles: string[] = [];
 
           itemsArray.forEach((item) => {
             const itemDefRef = this.getDefinitionKey(item.$ref);
-            const itemCode = this.traceDefinition(itemDefRef);
+            this.traceDefinition(itemDefRef); // Trace to ensure the type is registered
             const itemTitle = this.getDefinitionTitle(itemDefRef);
-            itemCodes.push(itemCode);
+            itemTitles.push(itemTitle);
             this.addToDepsMap(title_or_key, itemTitle);
           });
 
           this.addToImportsMap(title_or_key, "Tuple");
-          return this.codeBuilder.tuple(...itemCodes);
+          return this.codeBuilder.tuple(...itemTitles);
         }
 
         return this.codeBuilder.any();
@@ -345,29 +350,30 @@ export class RustBlueprintParser {
         // | ListDefinition
         if ("$ref" in items!) {
           const itemDefRef = this.getDefinitionKey(items.$ref);
-          const itemCode = this.traceDefinition(itemDefRef);
+          this.traceDefinition(itemDefRef); // Trace to ensure the type is registered
           const itemTitle = this.getDefinitionTitle(itemDefRef);
 
           this.addToDepsMap(title, itemTitle);
           this.addToImportsMap(title, "List");
 
-          return this.codeBuilder.list(itemCode);
+          // Use itemTitle (type name) instead of itemCode for cleaner output
+          return this.codeBuilder.list(itemTitle);
         }
 
         // | TupleDefinition
         const itemsArray = items as { $ref: string }[];
-        const itemCodes: string[] = [];
+        const itemTitles: string[] = [];
 
         itemsArray.forEach((item) => {
           const itemDefRef = this.getDefinitionKey(item.$ref);
-          const itemCode = this.traceDefinition(itemDefRef);
+          this.traceDefinition(itemDefRef); // Trace to ensure the type is registered
           const itemTitle = this.getDefinitionTitle(itemDefRef);
-          itemCodes.push(itemCode);
+          itemTitles.push(itemTitle);
           this.addToDepsMap(title, itemTitle);
         });
 
         this.addToImportsMap(title, "Tuple");
-        return this.codeBuilder.tuple(...itemCodes);
+        return this.codeBuilder.tuple(...itemTitles);
       }
     }
 
@@ -410,6 +416,7 @@ export class RustBlueprintParser {
       fields,
     } = constr as ConstructorDefinition;
     const fieldCodes: string[] = [];
+    const fieldTitles: string[] = [];
 
     fields?.forEach((field) => {
       const fieldDefRef = this.getDefinitionKey(field.$ref);
@@ -419,11 +426,16 @@ export class RustBlueprintParser {
         ? this.addToDepsMap(currentTitle, fieldTitle)
         : this.addToDepsMap(constructorTitle, fieldTitle);
       fieldCodes.push(fieldCode!);
+      fieldTitles.push(fieldTitle);
     });
+
+    // Always use type names (titles) for field references
+    // This ensures we use type names like "MPFProof" instead of inline definitions
+    const fieldsForConstr = fieldTitles;
 
     const { toImport, constructorCode } = this.codeBuilder.constr(
       index,
-      fieldCodes
+      fieldsForConstr
     );
 
     if (constructorTitle === currentTitle) {
@@ -443,18 +455,56 @@ export class RustBlueprintParser {
     return key;
   };
 
-  private getDefinitionTitle = (defRef: string) => {
+  private getDefinitionTitle = (defRef: string): string => {
     const key = this.getDefinitionKey(defRef);
-    if (key in this.defTitleMap) {
-      return this.defTitleMap[key];
+
+    // Handle List$ type definitions FIRST - convert to List<TypeName>
+    // Must check before cache lookup as cache might have wrong format
+    if (key.startsWith("List$")) {
+      const innerKey = key.substring(5); // Remove "List$" prefix
+      const innerTitle = this.getDefinitionTitle(innerKey);
+      const listTitle = `List<${innerTitle}>`;
+      this.mapDefTitle(key, listTitle);
+      return listTitle;
     }
-    let title = this.definitions[key].title;
+
+    // Check cache
+    if (key in this.defTitleMap) {
+      const cachedTitle = this.defTitleMap[key];
+      // Fix any List$ patterns that were incorrectly cached
+      if (cachedTitle.includes("List$")) {
+        const fixedTitle = this.fixListPatterns(cachedTitle);
+        this.mapDefTitle(key, fixedTitle);
+        return fixedTitle;
+      }
+      return cachedTitle;
+    }
+
+    let title = this.definitions[key]?.title;
     if (title) {
+      // Fix any List$ patterns in the title from the definition
+      if (title.includes("List$")) {
+        title = this.fixListPatterns(title);
+      }
       this.mapDefTitle(key, title);
       return title;
     }
     title = key.split("/").pop()!;
+    // Fix any List$ patterns in fallback title
+    if (title.includes("List$")) {
+      title = this.fixListPatterns(title);
+    }
     return title;
+  };
+
+  // Helper to fix List$ patterns in type strings
+  private fixListPatterns = (str: string): string => {
+    // Match List$ followed by a type name (until space, comma, paren, angle bracket, or end)
+    return str.replace(/List\$([A-Za-z0-9_\/]+)/g, (_, innerType) => {
+      // Get just the type name from path if it contains /
+      const typeName = innerType.includes("/") ? innerType.split("/").pop()! : innerType;
+      return `List<${typeName}>`;
+    });
   };
 
   private addToImportsMap = (title: string, importName: string) => {

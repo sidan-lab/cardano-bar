@@ -409,6 +409,16 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
         // because we need to generate the struct definition, not a type alias
         if (aliasCode.includes("::")) continue;
 
+        // Skip if both aliasName and aliasCode are simple type names (import mappings)
+        // For example, "ByteArray" -> "ByteString" should not replace "ByteString" with "ByteArray"
+        // A simple type name has no special characters like ::, |, <, >, (, )
+        const isSimpleTypeName = (name: string) =>
+          !name.includes("::") &&
+          !name.includes("|") &&
+          !name.includes("<") &&
+          !name.includes("(");
+        if (isSimpleTypeName(aliasName) && isSimpleTypeName(aliasCode)) continue;
+
         // Replace constructor patterns, type patterns, and enum patterns
         // We want to replace enum type definitions (like "A|B|C" -> "MyEnum")
         // so we should NOT skip types with top-level pipes in this context
@@ -498,9 +508,16 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
                 if (name === typeName) return false; // Skip self
                 if (!code) return false; // Skip undefined values
                 // Check if this type appears as a variant in another enum
-                // Enum format: "Variant1|Variant2|Variant3"
+                // Enum format: "Variant1|Variant2|Variant3" or "Variant1@@0::(fields)|Variant2@@1::(fields)|..."
                 if (code.includes("|")) {
-                  const variants = code.split("|").map((v) => v.trim());
+                  const variants = code.split("|").map((v) => {
+                    const trimmed = v.trim();
+                    // Extract variant name from "VariantName@@INDEX::fields" format
+                    if (trimmed.includes("@@")) {
+                      return trimmed.split("@@")[0];
+                    }
+                    return trimmed;
+                  });
                   return variants.includes(typeName);
                 }
                 return false;
@@ -518,6 +535,36 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
           return `pub type ${typeName} = Constr${index}<()>;`;
         } else {
           // Constructor with fields
+          // Check if this is a variant in an enum - if so, skip generating it
+          if (typeCodeMap) {
+            const isEnumVariant = Object.entries(typeCodeMap).some(
+              ([name, code]) => {
+                if (name === typeName) return false; // Skip self
+                if (!code) return false; // Skip undefined values
+                // Check if this type appears as a variant in another enum
+                // Enum format: "Variant1@@0::(fields)|Variant2@@1::(fields)|..."
+                if (code.includes("|")) {
+                  const variants = code.split("|").map((v) => {
+                    const trimmed = v.trim();
+                    // Extract variant name from "VariantName@@INDEX::fields" format
+                    if (trimmed.includes("@@")) {
+                      return trimmed.split("@@")[0];
+                    }
+                    return trimmed;
+                  });
+                  return variants.includes(typeName);
+                }
+                return false;
+              }
+            );
+
+            if (isEnumVariant) {
+              // This is an enum variant with fields - don't generate a separate type
+              // The enum itself will inline the Box<(field types)>
+              return ""; // Return empty string to skip generation
+            }
+          }
+
           // Parse fields from "(Type1, Type2, ...)" format
           // Use smart split that respects nested parentheses and angle brackets
           const smartSplit = (str: string): string[] => {
@@ -605,20 +652,32 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
             return `#[derive(Debug, Clone, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<Box<List<${enumTypeName}>>>);`;
           }
 
-          // Check if the field type reference is an enum (check in typeCodeMap)
-          // Exclude List types - if the field itself is a List<>, it should NOT be treated as an enum field
-          const isEnumFieldRef =
+          // Check if the field type reference is a custom type (enum/struct)
+          const isCustomTypeRef =
             fieldTypes.length === 1 &&
-            !fieldTypes[0].startsWith("List<") && // Field itself should not be a List<>
+            !fieldTypes[0].startsWith("List<") &&
+            !fieldTypes[0].startsWith("Map<") &&
+            !fieldTypes[0].startsWith("Option<") &&
             typeCodeMap &&
-            typeCodeMap[fieldTypes[0]]?.includes("|") &&
-            !typeCodeMap[fieldTypes[0]]?.includes("::") &&
-            !typeCodeMap[fieldTypes[0]]?.startsWith("List<");
+            (typeCodeMap[fieldTypes[0]]?.includes("|") || // enum type
+              typeCodeMap[fieldTypes[0]]?.includes("::"));  // struct type
 
-          if (isEnumFieldRef) {
-            // Single field that references an enum type - use ImplConstr with Box<List<>>
-            return `#[derive(Debug, Clone, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<Box<List<${fieldTypes[0]}>>>);`;
-          } else {
+          if (isCustomTypeRef) {
+            // Single field that references a custom type (enum/struct) - just use the type directly
+            return `#[derive(Debug, Clone, ImplConstr)]\npub struct ${typeName}(pub ${fieldTypes[0]});`;
+          }
+
+          // Check if single field is a List type
+          const isListTypeRef =
+            fieldTypes.length === 1 &&
+            fieldTypes[0].startsWith("List<");
+
+          if (isListTypeRef) {
+            // Single field that is a List type - use Constr0<List<...>> without Box
+            return `#[derive(Clone, Debug, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<${fieldTypes[0]}>);`;
+          }
+
+          {
             // Regular fields - use ImplConstr and Box<>
             // Replace inline type definitions in each field with type names
             const processedFieldTypes = fieldTypes.map((fieldType) => {
@@ -633,6 +692,13 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
 
               // For each field, try to find a matching type name in typeCodeMap
               if (typeCodeMap) {
+                // Helper to check if a name is a simple type (not a complex definition)
+                const isSimpleTypeName = (name: string) =>
+                  !name.includes("::") &&
+                  !name.includes("|") &&
+                  !name.includes("<") &&
+                  !name.includes("(");
+
                 // Collect all matches
                 const matches: string[] = [];
                 for (const [aliasName, aliasCode] of Object.entries(
@@ -643,6 +709,10 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
                   if (aliasName === "Data") continue;
                   // Skip "PlutusData" type alias if it maps to itself - prefer more specific types
                   if (aliasName === "PlutusData" && aliasCode === "PlutusData")
+                    continue;
+                  // Skip import mappings where both key and value are simple type names
+                  // (e.g., "ByteArray" -> "ByteString" should not replace "ByteString" with "ByteArray")
+                  if (isSimpleTypeName(aliasName) && isSimpleTypeName(aliasCode))
                     continue;
                   if (aliasCode === fieldType) {
                     matches.push(aliasName);
@@ -749,8 +819,31 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
           const firstColonColonIndex = rest.indexOf("::");
           const indexStr = rest.substring(0, firstColonColonIndex);
           const fields = rest.substring(firstColonColonIndex + 2);
-          // For enum variants, wrap the variant name as the type: VariantName(VariantName)
-          const formattedFields = fields ? `(${name})` : "";
+          // For enum variants:
+          // - Single param: just (field) without Box
+          // - Multiple params: (Box<(field1, field2, ...)>)
+          let formattedFields = "";
+          if (fields) {
+            // Parse the fields to count how many there are
+            const innerFields = fields.slice(1, -1); // Remove outer parentheses
+            // Check if there's only one field (no commas at depth 0)
+            let depth = 0;
+            let hasMultipleFields = false;
+            for (const char of innerFields) {
+              if (char === '(' || char === '<') depth++;
+              else if (char === ')' || char === '>') depth--;
+              else if (char === ',' && depth === 0) {
+                hasMultipleFields = true;
+                break;
+              }
+            }
+            if (hasMultipleFields) {
+              formattedFields = `(Box<${fields}>)`;
+            } else {
+              // Single param - just use the type directly
+              formattedFields = `(${innerFields})`;
+            }
+          }
           variants.push({
             index: parseInt(indexStr, 10),
             name,
