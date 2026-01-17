@@ -57,20 +57,27 @@ export class RSCodeBuilder {
         : parameters.length === 1
         ? parameters[0]
         : `(${parameters.join(", ")})`;
+    // For function parameter, add & to each type
+    const paramTypeWithRef =
+      parameters.length === 0
+        ? "()"
+        : parameters.length === 1
+        ? `&${paramType}`
+        : `(${parameters.map(p => `&${p}`).join(", ")})`;
 
     let code = "";
 
     // Generate blueprint function
     code += `pub fn ${functionName}_spending_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    params: ${paramType},\n`;
+      code += `    params: ${paramTypeWithRef},\n`;
     }
     code += `) -> SpendingBlueprint<${paramType}, ${redeemerType}, ${datumType}> {\n`;
 
-    code += `    let app_config = AppConfig::new();\n`;
+    code += `    let script_config = ScriptConfig::new();\n`;
     code += `    let mut blueprint = SpendingBlueprint::new(\n`;
-    code += `        app_config.plutus_version,\n`;
-    code += `        app_config.network_id,\n`;
+    code += `        script_config.plutus_version,\n`;
+    code += `        script_config.network_id,\n`;
     code += `        None\n`;
     code += `    );\n`;
 
@@ -124,18 +131,25 @@ export class RSCodeBuilder {
         : parameters.length === 1
         ? parameters[0]
         : `(${parameters.join(", ")})`;
+    // For function parameter, add & to each type
+    const paramTypeWithRef =
+      parameters.length === 0
+        ? "()"
+        : parameters.length === 1
+        ? `&${paramType}`
+        : `(${parameters.map(p => `&${p}`).join(", ")})`;
 
     let code = "";
 
     // Generate blueprint function
     code += `pub fn ${functionName}_minting_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    params: ${paramType},\n`;
+      code += `    params: ${paramTypeWithRef},\n`;
     }
     code += `) -> MintingBlueprint<${paramType}, ${redeemerType}> {\n`;
 
-    code += `    let app_config = AppConfig::new();\n`;
-    code += `    let mut blueprint = MintingBlueprint::new(app_config.plutus_version);\n`;
+    code += `    let script_config = ScriptConfig::new();\n`;
+    code += `    let mut blueprint = MintingBlueprint::new(script_config.plutus_version);\n`;
 
     if (parameters.length === 0) {
       code += `    blueprint\n`;
@@ -187,20 +201,27 @@ export class RSCodeBuilder {
         : parameters.length === 1
         ? parameters[0]
         : `(${parameters.join(", ")})`;
+    // For function parameter, add & to each type
+    const paramTypeWithRef =
+      parameters.length === 0
+        ? "()"
+        : parameters.length === 1
+        ? `&${paramType}`
+        : `(${parameters.map(p => `&${p}`).join(", ")})`;
 
     let code = "";
 
     // Generate blueprint function
     code += `pub fn ${functionName}_withdrawal_blueprint(\n`;
     if (parameters.length > 0) {
-      code += `    params: ${paramType},\n`;
+      code += `    params: ${paramTypeWithRef},\n`;
     }
     code += `) -> WithdrawalBlueprint<${paramType}, ${redeemerType}> {\n`;
 
-    code += `    let app_config = AppConfig::new();\n`;
+    code += `    let script_config = ScriptConfig::new();\n`;
     code += `    let mut blueprint = WithdrawalBlueprint::new(\n`;
-    code += `        app_config.plutus_version,\n`;
-    code += `        app_config.network_id\n`;
+    code += `        script_config.plutus_version,\n`;
+    code += `        script_config.network_id\n`;
     code += `    );\n`;
 
     if (parameters.length === 0) {
@@ -663,8 +684,8 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
               typeCodeMap[fieldTypes[0]]?.includes("::"));  // struct type
 
           if (isCustomTypeRef) {
-            // Single field that references a custom type (enum/struct) - just use the type directly
-            return `#[derive(Debug, Clone, ImplConstr)]\npub struct ${typeName}(pub ${fieldTypes[0]});`;
+            // Single field that references a custom type (enum/struct) - wrap in ConstrN
+            return `#[derive(Debug, Clone, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<${fieldTypes[0]}>);`;
           }
 
           // Check if single field is a List type
@@ -747,16 +768,20 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
               return fieldType;
             });
 
-            let boxContent: string;
             if (processedFieldTypes.length === 1) {
-              boxContent = processedFieldTypes[0];
-            } else if (processedFieldTypes.length > 12) {
-              // For tuples with more than 12 items, wrap with ConstrFields<>
-              boxContent = `ConstrFields<(${processedFieldTypes.join(", ")})>`;
+              // Single field - no Box wrapper needed
+              return `#[derive(Clone, Debug, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<${processedFieldTypes[0]}>);`;
             } else {
-              boxContent = `(${processedFieldTypes.join(", ")})`;
+              // Multiple fields - use Box for tuple
+              let boxContent: string;
+              if (processedFieldTypes.length > 12) {
+                // For tuples with more than 12 items, wrap with ConstrFields<>
+                boxContent = `ConstrFields<(${processedFieldTypes.join(", ")})>`;
+              } else {
+                boxContent = `(${processedFieldTypes.join(", ")})`;
+              }
+              return `#[derive(Clone, Debug, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<Box<${boxContent}>>);`;
             }
-            return `#[derive(Clone, Debug, ImplConstr)]\npub struct ${typeName}(pub Constr${index}<Box<${boxContent}>>);`;
           }
         }
       }
@@ -1031,14 +1056,14 @@ pub fn get_${importName.toLowerCase()}() -> &'static Blueprint {
   };
 
   constant = (plutusVersion: string) =>
-    `pub struct AppConfig {
+    `pub struct ScriptConfig {
     pub plutus_version: LanguageVersion,
     pub network_id: u8,
     pub stake_key_hash: Option<String>,
     pub is_stake_script_credential: bool,
 }
 
-impl AppConfig {
+impl ScriptConfig {
     pub fn new() -> Self {
         Self {
             plutus_version: LanguageVersion::${plutusVersion},

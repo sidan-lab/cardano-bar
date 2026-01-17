@@ -90,7 +90,7 @@ export class RustBlueprintParser {
           );
           const defKey = this.getDefinitionKey(parameter.schema.$ref);
           const title = this.defTitleMap[defKey];
-          return this.titleCodeMap[title];
+          return title; // Use type name, not internal code representation
         });
       }
 
